@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+db.sqlite3
+venv/
+.env
+chatire-frontend/node_modules/
+chatire-frontend/dist/
+.DS_Store
+Thumbs.db
