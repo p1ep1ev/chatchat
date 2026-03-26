@@ -141,12 +141,12 @@ export default {
     },
 
     fetchChatSessionHistory () {
-      this.$.get(`http://127.0.0.1:8000/api/chats/${this.$route.params.uri}/messages/`, (data) => {
+      this.$.get(`http://localhost:8000/api/chats/${this.$route.params.uri}/messages/`, (data) => {
         this.messages = data.messages
       })
     },
     connectToWebSocket () {
-      const websocket = new WebSocket(`ws://localhost:8001/ws/chat/${this.$route.params.uri}`)
+      const websocket = new WebSocket(`ws://localhost:8000/ws/chat/${this.$route.params.uri}/`)
       websocket.onopen = this.onOpen
       websocket.onclose = this.onClose
       websocket.onmessage = this.onMessage

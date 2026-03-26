@@ -1,0 +1,10 @@
+django>=4.2,<5.0
+daphne
+channels[daphne]
+channels-redis
+celery
+redis
+psycopg2-binary
+djangorestframework
+djoser
+django-cors-headers

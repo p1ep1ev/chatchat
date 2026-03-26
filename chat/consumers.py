@@ -15,7 +15,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Leave the group
         print("❌ WebSocket disconnected from room:", self.room_group_name)
         await self.channel_layer.group_discard(
             self.room_group_name,
@@ -30,3 +29,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "message": event["message"]["message"],  # extract just the text
             "user": event["user"]
         }))
+    
+    async def receive(self, text_data): # получение данных
+        data = json.loads(text_data)
+        message = data.get('message')
+        user = self.scope['user'].username if self.scope['user'].is_authenticated else 'Anonymous'
+
+        await self.channel_layer.group_send( # отправка сообщения
+            self.room_group_name,
+            {
+                'type': 'chat_message', # вызов async def chat_message
+                'message': {'message': message},
+                'user': user
+            }
+        )

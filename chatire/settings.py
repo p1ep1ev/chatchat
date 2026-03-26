@@ -31,7 +31,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-     'django.contrib.admin',
+    'daphne',
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -40,17 +41,15 @@ INSTALLED_APPS = [
     'djoser',
     'corsheaders',
     'rest_framework',
-    'rest_framework.authtoken',
     'chat',
-    'notifications',
     'channels',
 ]
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -79,6 +78,12 @@ TEMPLATES = [
 ]
 
 CELERY_TASK_ALWAYS_EAGER = True
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
 
 # notifications settings ]
 NOTIFICATIONS_CHANNELS = {
@@ -94,8 +99,12 @@ WSGI_APPLICATION = 'chatire.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'chatchat',     
+        'USER': 'admin',        
+        'PASSWORD': 'pass',     
+        'HOST': 'db',           
+        'PORT': '5432',
     }
 }
 
@@ -103,7 +112,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("redis", 6379)],
         },
     },
 }
@@ -141,17 +150,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
-    },
-}
-
 DJOSER = {
     'USER_CREATE_PASSWORD_RETYPE': False,
     'SERIALIZERS': {},
@@ -161,5 +159,8 @@ DJOSER = {
         'user_list': ['rest_framework.permissions.IsAdminUser'],
     },
 }
-import pprint
-pprint.pprint(DJOSER)
+
+import os
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

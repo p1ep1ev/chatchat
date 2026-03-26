@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=chatchat
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=pass
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build: .
+    command: celery -A chatire worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+      - backend
+
+  frontend:
+    build: 
+      context: ./chatire-frontend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./chatire-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend

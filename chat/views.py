@@ -12,8 +12,8 @@ from asgiref.sync import async_to_sync
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
-from notifications.utils import notify
-from notifications import default_settings as notifs_settings
+# from notifications.utils import notify
+# from notifications import default_settings as notifs_settings
 import json
 
 class ChatSessionView(APIView):
