@@ -7,23 +7,26 @@
           <div class="card-header text-white text-center font-weight-bold subtle-blue-gradient">
             Share the page URL to invite new friends
           </div>
-
+      <!-- упрощаем -->
           <div class="card-body">
             <div class="container chat-body" ref="chatBody">
-              <div v-for="message in messages" :key="message.id" class="row chat-section">
-                <template v-if="username === message.user.username">
+              <div v-for="(message, index) in messages" :key="index" class="row chat-section">
+      <!-- проверка пользователя -->
+                <template v-if="username === getUsername(message)">
                   <div class="col-sm-7 offset-3">
                     <span class="card-text speech-bubble speech-bubble-user float-right text-white subtle-blue-gradient">
                       {{ message.message }}
                     </span>
                   </div>
                   <div class="col-sm-2">
-                    <img class="rounded-circle" :src="generateAvatar(message.user.username)"/>
+                    <img class="rounded-circle" :src="generateAvatar(getUsername(message))"/>
                   </div>
                 </template>
+
+      <!-- собеседник -->
                 <template v-else>
                   <div class="col-sm-2">
-                    <img class="rounded-circle" :src="generateAvatar(message.user.username)" />
+                    <img class="rounded-circle" :src="generateAvatar(getUsername(message))" />
                   </div>
                   <div class="col-sm-7">
                     <span class="card-text speech-bubble speech-bubble-peer">
@@ -76,13 +79,11 @@ export default {
 
   created () {
     this.username = sessionStorage.getItem('username')
-
-    // Setup headers for all requests
-    $.ajaxSetup({
-      beforeSend: function(xhr) {
-        xhr.setRequestHeader('Authorization', `Token ${sessionStorage.getItem('authToken')}`)
-      }
-    })
+    const token = sessionStorage.getItem('authToken')
+    if (!token) {
+      this.$router.push('/signin')
+      return
+    }
 
     if (this.$route.params.uri) {
       this.joinChatSession()
@@ -92,59 +93,102 @@ export default {
   },
     updated () {
   // Scroll to bottom of Chat window
-  const chatBody = this.$refs.chatBody
-  if (chatBody) {
-    chatBody.scrollTop = chatBody.scrollHeight
-    }
+      const chatBody = this.$refs.chatBody
+      if (chatBody) {
+        chatBody.scrollTop = chatBody.scrollHeight
+      }
     },
 
   methods: {
     startChatSession () {
-      this.$.post('http://localhost:8000/api/chats/', (data) => {
-        alert("A new session has been created. You'll be redirected automatically.")
+      const token = sessionStorage.getItem('authToken')
+      fetch('http://localhost:8000/api/chats/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Ошибка создания сессии')
+        return response.json()
+      })
+      .then(data => {
+        alert("Сессия создана! Перенаправляем...")
         this.sessionStarted = true
         this.$router.push(`/chats/${data.uri}/`)
       })
-      .fail((response) => {
-        alert(response.responseText)
+      .catch(error => {
+        alert("Не удалось создать чат: " + error.message)
       })
     },
 
-    postMessage (event) {
-      const data = {message: this.message}
-
-      $.post(`http://localhost:8000/api/chats/${this.$route.params.uri}/messages/`, data, (data) => {
-        this.message = '' // clear the message after sending
-      })
-      .fail((response) => {
-        alert(response.responseText)
-      })
+    getUsername(message) {
+      if (!message || !message.user) return 'Anonymous';
+      // eсли user — это объект {username: "..."}
+      if (typeof message.user === 'object') {
+        return message.user.username || 'Anonymous';
+      }
+      // eсли user — это просто строка (из сокетов)
+      return message.user;
     },
 
-    joinChatSession () {
-      const uri = this.$route.params.uri
-
-      this.$.ajax({
-        url: `http://localhost:8000/api/chats/${uri}/`,
-        data: { username: this.username },
-        type: 'PATCH',
-        success: (data) => {
-          const user = data.members.find((member) => member.username === this.username)
-
-          if (user) {
-            // The user belongs/has joined the session
-            this.sessionStarted = true
-            this.fetchChatSessionHistory()
-          }
-        }
+    postMessage () {
+      const uri = this.$route.params.uri;
+      const token = sessionStorage.getItem('authToken');
+      const payload = { message: this.message };
+      fetch(`http://localhost:8000/api/chats/${uri}/messages/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`
+        },
+        body: JSON.stringify(payload)
       })
+      .then(() => {
+        this.message = '';
+      })
+      .catch(error => alert("Ошибка отправки: " + error));
+    },
+
+     joinChatSession () {
+      const uri = this.$route.params.uri;
+      const token = sessionStorage.getItem('authToken');
+
+      fetch(`http://localhost:8000/api/chats/${uri}/`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: this.username })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Ошибка входа в сессию');
+        return res.json();
+      })
+      .then(data => {
+        console.log("✅ Успешно вошли в сессию:", data);
+        this.sessionStarted = true;
+        this.fetchChatSessionHistory();
+      })
+      .catch(err => {
+        console.error("❌ Ошибка PATCH:", err);
+      });
     },
 
     fetchChatSessionHistory () {
-      this.$.get(`http://localhost:8000/api/chats/${this.$route.params.uri}/messages/`, (data) => {
-        this.messages = data.messages
+      const uri = this.$route.params.uri;
+      const token = sessionStorage.getItem('authToken');
+      fetch(`http://localhost:8000/api/chats/${uri}/messages/`, {
+        headers: { 'Authorization': `Token ${token}` }
       })
+      .then(res => res.json())
+      .then(data => {
+        this.messages = data.messages;
+      });
     },
+
     connectToWebSocket () {
       const websocket = new WebSocket(`ws://localhost:8000/ws/chat/${this.$route.params.uri}/`)
       websocket.onopen = this.onOpen
@@ -165,13 +209,28 @@ export default {
     },
 
     onMessage (event) {
-    const data = JSON.parse(event.data);
-    console.log("📩 Incoming WebSocket:", event.data); // <-- debug
-    this.messages.push({
-        user: data.user,
-        message: data.message
-    });
+      try {
+        const data = JSON.parse(event.data);
+        // проверка формата
+        if (data.message) {
+          this.messages.push({
+            user: typeof data.user === 'object' ? data.user.username : data.user,
+            message: data.message
+          });
+        }
+      } catch (e) {
+        console.error("Ошибка получения данных из сокета:", e);
+      }
     },
+
+    // onMessage (event) {
+    //     const data = JSON.parse(event.data);
+    //     console.log("📩 Incoming WebSocket:", data); // <-- debug
+    //     this.messages.push({
+    //       user: data.user,
+    //       message: data.message
+    //     });
+    // },
 
     onError (event) {
       alert('An error occured:', event.data)

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'djoser',
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
     'chat',
     'channels',
 ]
@@ -158,6 +159,12 @@ DJOSER = {
         'user': ['rest_framework.permissions.IsAuthenticated'],
         'user_list': ['rest_framework.permissions.IsAdminUser'],
     },
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
 }
 
 import os
