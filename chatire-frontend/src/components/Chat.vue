@@ -16,6 +16,9 @@
                   <div class="col-sm-7 offset-3">
                     <span class="card-text speech-bubble speech-bubble-user float-right text-white subtle-blue-gradient">
                       {{ message.message }}
+                      <div class="text-right" style="font-size: 0.7em; opacity: 0.8; margin-top: 4px;">
+                        {{ formatTime(message.create_date || new Date()) }}
+                      </div>
                     </span>
                   </div>
                   <div class="col-sm-2">
@@ -31,6 +34,9 @@
                   <div class="col-sm-7">
                     <span class="card-text speech-bubble speech-bubble-peer">
                       {{ message.message }}
+                      <div style="font-size: 0.7em; opacity: 0.5; margin-top: 4px;">
+                        {{ formatTime(message.create_date || new Date()) }}
+                      </div>
                     </span>
                   </div>
                 </template>
@@ -261,7 +267,13 @@ export default {
 
     // Return image as base64
     return canvas.toDataURL();
+  },
+
+    formatTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
+
 
   }
 }

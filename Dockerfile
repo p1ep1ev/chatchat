@@ -10,3 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "chatire.asgi:application"]
+# Было: CMD ["python", "manage.py", "runserver"]
